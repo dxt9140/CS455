@@ -13,8 +13,8 @@ Execution:
 
 Exit:
 
-    The program will now exit. You should manually exit the program. By using 
-    control + C or command + C. If it doesn't work, close terminal or command Prompt.
+    The program will not exit. You should manually exit the program. By using 
+    control + C or command + C. If it doesn't work, close terminal or command prompt.
     I tried to make it quit when user press ESC but there is some bug which we can 
     fix later.
 
