@@ -13,9 +13,10 @@ Execution:
 
 Exit:
 
-    The program will exit once the spacebar has been pressed. Otherwise, it can
-    be killed by the standard kill <pid> command. It runs under the "python"
-    command name. 
+    The program will now exit. You should manually exit the program. By using 
+    control + C or command + C. If it doesn't work, close terminal or command Prompt.
+    I tried to make it quit when user press ESC but there is some bug which we can 
+    fix later.
 
 Created 2/14/2018
 Initial Commit
