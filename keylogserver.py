@@ -13,12 +13,24 @@ import socket
 DEFAULT_PORT = 35476
 
 def main():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    connection = (socket.gethostname(), DEFAULT_PORT)
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    connection = ('localhost', DEFAULT_PORT)
     s.bind(connection)
-    s.listen(1)
-    client, addr = s.accept()
-    print( client )
+
+    f = open("output.txt", 'a')
+
+    running = True
+
+    while running:
+        message, addr = s.recvfrom(1024)
+        print(message) 
+        if message == "done":
+            running = False
+            break
+        f.write( message )
+
+    f.close()
+        
 
 if __name__ == '__main__':
     main()

