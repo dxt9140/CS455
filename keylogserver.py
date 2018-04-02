@@ -23,7 +23,6 @@ def main():
 
     while running:
         message, addr = s.recvfrom(1024)
-        print(message) 
         if message == "done":
             running = False
             break

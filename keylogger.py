@@ -33,19 +33,21 @@ class DataThread(threading.Thread):
         hostname = 'localhost'
         port = 35476
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         connection = (hostname, port)
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         while running:
             try:
+                s.bind( connection )
+                s.close()
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                
+            except:
                 if len(string) < 1024:
                     pass
                 else:
                     data = string[0:1023]
                     string = string[1024:]
                     s.sendto( data, connection )
-            except:
-                pass
 
         s.sendto(string, connection)
         s.sendto("done", connection)
